@@ -4,7 +4,7 @@
 Seismology with Adversarial Recurrent Stars
 
 ## Contributors
-Benjamin Pope, Guy Davies
+[Benjamin Pope](http://benjaminpope.github.io), [Guy Davies](https://www.birmingham.ac.uk/staff/profiles/physics/davies-guy.aspx)
 
 ## The Idea
 
