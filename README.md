@@ -11,3 +11,7 @@ Can we use Generative Adversarial Networks to model red giant light curves, and 
 ## The Data
 
 We've got a thousand of the best and brightest red giants, and we're going to train our GAN on one-day segments of long-cadence data.
+
+## The Context
+
+This is a project developed for [TESS Ninja 2](https://tess.ninja/two/) held at the University of Chicago, March 25-29 2019. 
