@@ -7,16 +7,16 @@ class gan():
     ''' A GAN for Kepler lightcurves - minimum Possible
     working example.
 
-    Should accept Kepler lc's of 48 data points (~1 day)
+    Should accept Kepler lc's of 48*2 data points (~1 day)
     '''
     def __init__(self):
-        self.lc_size = 48
-        self.gen_shape = {'d1': 32,
-                          'd2': 64,
-                          'd3': 128
+        self.lc_size = 48*2
+        self.gen_shape = {'d1': 32*2,
+                          'd2': 64*2,
+                          'd3': 128*2
                          }
-        self.d_shape = {'d1': 64,
-                        'd2': 32
+        self.d_shape = {'d1': 64*2,
+                        'd2': 32*2
                         }
         self.X_train = []
 
