@@ -18,6 +18,10 @@ class gan():
         self.d_shape = {'d1': 64,
                         'd2': 32
                         }
+        self.X_train = []
+
+    def noise(self, nd):
+        return np.random.uniform(-1, 1, (nd, self.lc_size))
 
     def make_generator(self):
         self.gen_model = Sequential()
@@ -69,7 +73,7 @@ class gan():
         for epoch in range(epochs + 1):
             for batch in range(num_batches):
                 # Noise images
-                noise = np.random.uniform(-1, 1, (half_batch, self.lc_size))
+                noise = self.noise(half_batch)
                 fake_images = self.gen_model.predict(noise)
                 fake_labels = np.zeros((half_batch, 1)) # label is 0
                 # Real images ...
@@ -83,7 +87,7 @@ class gan():
                 d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
                 self.d_model.trainable=False
                 # Train the generator
-                noise = np.random.uniform(-1, 1, (batch_size, self.lc_size))
+                noise = self.noise(batch_size)
                 g_loss = self.combined.train_on_batch(noise, np.ones((batch_size, 1)))
 
                 # Plot the progress
@@ -101,21 +105,22 @@ class gan():
         self.X_train /= np.max(np.abs(self.X_train))
         print(f'Data shape : {self.X_train.shape}')
 
-    def make_img(self):
-        noise = np.random.normal(0, 1, (10, self.lc_size))
+    def make_img(self, nd=1):
+        noise = self.noise(nd)
         fake_images = self.gen_model.predict(noise)
         print(f'Fake images shape : {fake_images.shape}')
         fig, ax = plt.subplots()
         ax.plot(fake_images)
 
-    def plot_some_data(self):
-        self.get_data(nd=10)
+    def plot_some_data(self, nd=10):
+        if self.X_train == []:
+            self.get_data(nd=10)
         fig, ax = plt.subplots()
-        ax.plot(self.X_train.T)
+        ax.plot(self.X_train[:nd, :].T)
 
     def save_imgs(self, epoch, batch):
         r, c = 3, 5
-        noise = np.random.normal(0, 1, (r*c, self.lc_size))
+        noise = self.noise(r*c)
         gen_imgs = self.gen_model.predict(noise)
 
         fig, ax = plt.subplots()
