@@ -3,13 +3,13 @@ from keras.models import Sequential, Model
 from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 
-class gan(ndays=1):
+class gan():
     ''' A GAN for Kepler lightcurves - minimum Possible
     working example.
 
     Should accept Kepler lc's of 48*2 data points (~1 day)
     '''
-    def __init__(self):
+    def __init__(self,ndays=1):
         self.lc_size = 48*ndays
         self.gen_shape = {'d1': 32*ndays,
                           'd2': 64*ndays,
