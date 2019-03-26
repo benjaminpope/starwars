@@ -10,13 +10,14 @@ class gan():
     Should accept Kepler lc's of 48*2 data points (~1 day)
     '''
     def __init__(self):
-        self.lc_size = 48*2
-        self.gen_shape = {'d1': 32*2,
-                          'd2': 64*2,
-                          'd3': 128*2
+        n = 4
+        self.lc_size = 48*4
+        self.gen_shape = {'d1': 32*n,
+                          'd2': 64*n,
+                          'd3': 128*n
                          }
-        self.d_shape = {'d1': 64*2,
-                        'd2': 32*2
+        self.d_shape = {'d1': 64*n,
+                        'd2': 32*n
                         }
         self.X_train = []
 
