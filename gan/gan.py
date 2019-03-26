@@ -82,20 +82,23 @@ class gan():
                 d_loss_fake = self.d_model.train_on_batch(fake_images, fake_labels)
                 d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
                 self.d_model.trainable=False
-                noise = np.random.uniform(-1, 1, (batch_size, self.lc_size))
                 # Train the generator
+                noise = np.random.uniform(-1, 1, (batch_size, self.lc_size))
                 g_loss = self.combined.train_on_batch(noise, np.ones((batch_size, 1)))
+
                 # Plot the progress
-                print(f"Epoch: {epoch} D loss: {d_loss[0]} G loss: {g_loss}")
                 if epoch % 10 == 0:
-                    if batch % 50 == 0:
+                    if batch == 0:
+                        print(f"Epoch: {epoch} D loss: {d_loss[0]} G loss: {g_loss}")
                         self.save_imgs(epoch, batch)
 
     def get_data(self, nd=1000):
         x = np.linspace(0, 4*np.pi, self.lc_size)
         self.X_train = np.zeros([nd, self.lc_size])
         for i in range(nd):
-            self.X_train[i, :] = np.sin(x) + np.random.randn(self.lc_size)*0.01
+            self.X_train[i, :] = np.sin(x + np.random.randn(self.lc_size)*5.5) \
+                                 * np.random.randn(self.lc_size)*0.3
+        self.X_train /= np.max(np.abs(self.X_train))
         print(f'Data shape : {self.X_train.shape}')
 
     def make_img(self):
@@ -103,7 +106,7 @@ class gan():
         fake_images = self.gen_model.predict(noise)
         print(f'Fake images shape : {fake_images.shape}')
         fig, ax = plt.subplots()
-        ax.plot(fake_images.T)
+        ax.plot(fake_images)
 
     def plot_some_data(self):
         self.get_data(nd=10)
@@ -111,18 +114,17 @@ class gan():
         ax.plot(self.X_train.T)
 
     def save_imgs(self, epoch, batch):
-        r, c = 5, 5
+        r, c = 3, 5
         noise = np.random.normal(0, 1, (r*c, self.lc_size))
         gen_imgs = self.gen_model.predict(noise)
-        gen_imgs = 0.5 * gen_imgs + 0.5
 
         fig, ax = plt.subplots()
         cnt = 0
         for i in range(r):
             for j in range(c):
-                ax.plot(gen_imgs[cnt, :])
+                ax.plot(gen_imgs[cnt, :], 'k-', alpha=0.2)
                 cnt += 1
-        fig.savefig("images/lc_%d_%d.png" % (epoch, batch))
+        fig.savefig(f"images/lc_{epoch}.png" )
         plt.close()
 
 if __name__ == "__main__":
@@ -133,7 +135,5 @@ if __name__ == "__main__":
     starwars.plot_some_data()
     plt.show()
     starwars.get_data(nd=10000)
-    starwars.make_img()
     starwars.train(epochs=200)
-    starwars.plot_some_data()
     plt.show()
