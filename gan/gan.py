@@ -110,7 +110,7 @@ class gan():
         fake_images = self.gen_model.predict(noise)
         print(f'Fake images shape : {fake_images.shape}')
         fig, ax = plt.subplots()
-        ax.plot(fake_images)
+        ax.plot(fake_images.T)
 
     def plot_some_data(self, nd=10):
         if self.X_train == []:
