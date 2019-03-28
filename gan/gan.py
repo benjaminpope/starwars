@@ -73,14 +73,11 @@ class gan():
 
     def make_LSTM_generator(self):
         self.gen_model = Sequential()
-        self.gen_model.add(CuDNNLSTM(units=512, return_sequences=True,
+        self.gen_model.add(CuDNNLSTM(units=128, return_sequences=True,
                              input_shape=(self.lc_size, 1)))
         self.gen_model.add(LeakyReLU(0.2))
         self.gen_model.add(BatchNormalization(momentum=0.8))
         self.gen_model.add(Bidirectional(CuDNNLSTM(units=128)))
-        self.gen_model.add(BatchNormalization(momentum=0.8))
-        self.gen_model.add(Dense(256))
-        self.gen_model.add(LeakyReLU(0.2))
         self.gen_model.add(BatchNormalization(momentum=0.8))
         self.gen_model.add(Dense(self.lc_size, activation='tanh'))
         self.gen_model.add(Reshape((self.lc_size, 1)))
@@ -91,8 +88,6 @@ class gan():
         self.d_model.add(CuDNNLSTM(units=128, return_sequences=True,
                              input_shape=(self.lc_size, 1)))
         self.d_model.add(Bidirectional(CuDNNLSTM(units=128)))
-        self.d_model.add(Dense(256))
-        self.d_model.add(LeakyReLU(0.2))
         self.d_model.add(Dense(256))
         self.d_model.add(LeakyReLU(0.2))
         self.d_model.add(Dense(1, activation='sigmoid'))
