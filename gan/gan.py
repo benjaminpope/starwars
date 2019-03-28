@@ -103,7 +103,7 @@ class gan():
         self.gen_model.compile(loss='binary_crossentropy',
                                optimizer=gen_optimizer)
         self.d_model.trainable=False
-        z = Input(shape=(self.lc_size, ))
+        z = Input(shape=(self.lc_size, 1))
         img = self.gen_model(z)
         real = self.d_model(img)
         self.combined = Model(inputs=z, outputs=real)
