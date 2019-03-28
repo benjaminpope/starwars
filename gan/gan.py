@@ -19,6 +19,7 @@ class gan():
                         'd2': 32*ndays
                         }
         self.X_train = []
+        self.img_counter = 0
 
     def noise(self, nd):
         return np.random.uniform(-1, 1, (nd, self.lc_size))
@@ -66,43 +67,98 @@ class gan():
         self.combined.compile(loss='binary_crossentropy',
                               optimizer=gen_optimizer)
 
-    def train(self, epochs=100, batch_size=100):
+    def make_LSTM_generator(self):
+        self.gen_model = Sequential()
+        self.gen_model.add(Dense(128, input_shape=(self.lc_size, )))
+        self.gen_model.add(LeakyReLU(0.2))
+        self.gen_model.add(BatchNormalization(momentum=0.8))
+        self.gen_model.add(Dense(256))
+        self.gen_model.add(LeakyReLU(0.2))
+        self.gen_model.add(BatchNormalization(momentum=0.8))
+        self.gen_model.add(Dense(512))
+        self.gen_model.add(LeakyReLU(0.2))
+        self.gen_model.add(BatchNormalization(momentum=0.8))
+        self.gen_model.add(Dense(self.lc_size, activation='tanh'))
+        self.gen_model.add(Reshape((self.lc_size, 1)))
+        print(self.gen_model.summary())
+
+    def make_LSTM_discriminator(self):
+        self.d_model = Sequential()
+        self.d_model.add(LSTM(units=512, return_sequences=True,
+                             input_shape=(self.lc_size, 1)))
+        self.d_model.add(LSTM(units=512))
+        self.d_model.add(Dense(512))
+        self.d_model.add(LeakyReLU(0.2))
+        self.d_model.add(Dense(256))
+        self.d_model.add(LeakyReLU(0.2))
+        self.d_model.add(Dense(1, activation='sigmoid'))
+        print(self.d_model.summary())
+
+    def LSTM_model(self):
+        gen_optimizer = Adam(lr=0.005, beta_1=0.5)
+        disc_optimizer = Adam(lr=0.005, beta_1=0.5)
+        self.d_model.compile(loss='binary_crossentropy',
+                             optimizer=disc_optimizer,
+                             metrics=['accuracy'])
+        self.gen_model.compile(loss='binary_crossentropy',
+                               optimizer=gen_optimizer)
+        self.d_model.trainable=False
+        z = Input(shape=(self.lc_size, ))
+        img = self.gen_model(z)
+        real = self.d_model(img)
+        self.combined = Model(inputs=z, outputs=real)
+        self.combined.compile(loss='binary_crossentropy',
+                              optimizer=gen_optimizer)
+
+    def train(self, epochs=100, batch_size=500, LSTM=False):
         num_examples = self.X_train.shape[0]
         num_batches = int(num_examples / float(batch_size))
         half_batch = int(batch_size / 2)
-        for epoch in range(epochs + 1):
+        self.losses = np.zeros([epochs, 2])
+        for epoch in range(epochs):
             for batch in range(num_batches):
                 # Noise images
                 noise = self.noise(half_batch)
                 fake_images = self.gen_model.predict(noise)
-                fake_labels = np.zeros((half_batch, 1)) # label is 0
+                fake_labels = np.random.uniform(0.0, 0.1, half_batch)
                 # Real images ...
                 idx = np.random.randint(0, self.X_train.shape[0], half_batch)
                 real_images = self.X_train[idx]
-                real_labels = np.ones((half_batch, 1)) # label is 1
+                if LSTM:
+                    real_images = real_images.reshape(half_batch, self.lc_size, 1)
+                real_labels = np.random.uniform(0.9, 1.0, half_batch)
                 # Train the discriminator (real classified as ones and generated as zeros)
                 self.d_model.trainable=True
                 d_loss_real = self.d_model.train_on_batch(real_images, real_labels)
                 d_loss_fake = self.d_model.train_on_batch(fake_images, fake_labels)
                 d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
                 self.d_model.trainable=False
-                # Train the generator
+
+                # Train the combined model
                 noise = self.noise(batch_size)
                 g_loss = self.combined.train_on_batch(noise, np.ones((batch_size, 1)))
+            self.losses[epoch, 0] = d_loss[0]
+            self.losses[epoch, 1] = g_loss
+            # Plot the progress
+            if epoch % 10 == 0:
+                    print(f"Epoch: {epoch} D loss: {d_loss[0]} G loss: {g_loss}")
+                    self.save_imgs(epoch, batch)
 
-                # Plot the progress
-                if epoch % 10 == 0:
-                    if batch == 0:
-                        print(f"Epoch: {epoch} D loss: {d_loss[0]} G loss: {g_loss}")
-                        self.save_imgs(epoch, batch)
+    def plot_losses(self):
+        fig, ax = plt.subplots()
+        self.dl = ax.plot(self.losses[:,0], label=['D loss'])
+        self.gl = ax.plot(self.losses[:,1], label=['G loss'])
+        plt.show()
 
     def get_data(self, nd=1000):
-        x = np.linspace(0, 4*np.pi, self.lc_size)
+        x = np.linspace(0, self.lc_size, self.lc_size)
         self.X_train = np.zeros([nd, self.lc_size])
+        p = 80
+        fs, ps, ns = 0.001, 1.0, 0.001
         for i in range(nd):
-            self.X_train[i, :] = np.sin(x + np.random.randn(self.lc_size)*5.5) \
-                                 * np.random.randn(self.lc_size)*0.3
-        self.X_train /= np.max(np.abs(self.X_train))
+            self.X_train[i, :] = np.sin(x/(p + np.random.rand()*fs) + np.random.rand()*ps) \
+                                 + np.random.randn(self.lc_size)*ns
+            self.X_train[i, :] /= np.max(np.abs(self.X_train[i, :]))
         print(f'Data shape : {self.X_train.shape}')
 
     def make_img(self, nd=1):
@@ -119,26 +175,33 @@ class gan():
         ax.plot(self.X_train[:nd, :].T)
 
     def save_imgs(self, epoch, batch):
-        r, c = 3, 5
-        noise = self.noise(r*c)
+        r = 5
+        noise = self.noise(r)
         gen_imgs = self.gen_model.predict(noise)
 
         fig, ax = plt.subplots()
         cnt = 0
         for i in range(r):
-            for j in range(c):
-                ax.plot(gen_imgs[cnt, :], 'k-', alpha=0.2)
-                cnt += 1
-        fig.savefig(f"images/lc_{epoch}.png" )
+            ax.plot(gen_imgs[cnt, :], alpha=0.5)
+            cnt += 1
+        lbl = str(int(self.img_counter))
+        fig.savefig(f"lc_{lbl}.png" )
+        self.img_counter += 1
         plt.close()
 
 if __name__ == "__main__":
-    starwars = gan()
-    starwars.make_generator()
-    starwars.make_discriminator()
-    starwars.model()
+    LSTM = False
+    starwars = gan(ndays=16)
     starwars.plot_some_data()
     plt.show()
-    starwars.get_data(nd=10000)
+    if LSTM:
+        starwars.make_LSTM_generator()
+        starwars.make_LSTM_discriminator()
+        starwars.LSTM_model()
+    else:
+        starwars.make_generator()
+        starwars.make_discriminator()
+        starwars.model()
+    starwars.get_data(nd=20000)
     starwars.train(epochs=200)
-    plt.show()
+    starwars.plot_losses()
