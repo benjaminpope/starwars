@@ -9,7 +9,8 @@ class gan():
 
     Should accept Kepler lc's of 48*2 data points (~1 day)
     '''
-    def __init__(self,ndays=1):
+    def __init__(self,ndays=1,LSTM=False):
+        self.LSTM = LSTM
         self.lc_size = 48*ndays
         self.gen_shape = {'d1': 32*ndays,
                           'd2': 64*ndays,
@@ -22,7 +23,10 @@ class gan():
         self.img_counter = 0
 
     def noise(self, nd):
-        return np.random.uniform(-1, 1, (nd, self.lc_size))
+        if self.LSTM:
+            return np.random.uniform(-1, 1, (nd, self.lc_size,1))
+        else:
+            return np.random.uniform(-1, 1, (nd, self.lc_size))
 
     def make_generator(self):
         self.gen_model = Sequential()
@@ -191,7 +195,7 @@ class gan():
 
 if __name__ == "__main__":
     LSTM = False
-    starwars = gan(ndays=16)
+    starwars = gan(ndays=16,LSTM=LSTM)
     starwars.plot_some_data()
     plt.show()
     if LSTM:
